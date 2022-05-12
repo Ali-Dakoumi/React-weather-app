@@ -1,58 +1,103 @@
-import { useState } from "react";
-import Header from "./components/Header";
-import Tasks from "./components/Tasks";
-import AddTask from "./components/AddTask";
-
+import React, { useState, useEffect } from "react";
+const api = {
+  key: "7bd05d22464bf4071a4ad2f46a3b4048",
+  base: "https://api.openweathermap.org/data/2.5/",
+};
 const App = () => {
-  const [tasks, setTasks] = useState([
-    {
-      id: 1,
-      text: "Doctors ",
-      day: 1,
-      reminder: false,
-    },
-    {
-      id: 2,
-      text: "Players ",
-      day: 2,
-      reminder: false,
-    },
-  ]);
+  const [query, setQuery] = useState("");
+  const [weather, setWeather] = useState({});
+  const [bool, setBool] = useState(false);
+  const dateBuilder = (d) => {
+    let months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+    let days = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
 
-  const [showAddTask, setShowAddTask] = useState(false);
+    let day = days[d.getDay()];
+    let date = d.getDate();
+    let month = months[d.getMonth()];
+    let year = d.getFullYear();
 
-  const addTask = (task) => {
-    const id = Math.floor(Math.random() * 1000) + 1;
-    const newTask = { id, ...task };
-    setTasks([...tasks, newTask]);
+    return `${day} ${date} ${month} ${year}`;
   };
-
-  const toggleReminder = (id) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === id ? { ...task, reminder: !task.reminder } : task
-      )
+  const getWeather = async (query) => {
+    const data = await fetch(
+      `${api.base}weather?q=${query}&units=metric&APPID=${api.key}`
     );
+    const results = await data.json();
+    setWeather(results);
+    // console.log(" after search");
+    // console.log(" after search", weather);
+
+    // console.log(" state", weather);
   };
 
-  const deleteTask = (id) => {
-    setTasks(tasks.filter((task) => task.id !== id));
-    console.log(id);
+  useEffect(() => {
+    getWeather("tunis");
+  }, []);
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    getWeather(query);
+    setQuery("");
+    setBool(true);
   };
 
   return (
-    <div className="container">
-      <Header
-        showAdd={showAddTask}
-        onAdd={() => setShowAddTask(!showAddTask)}
-        title="Task Tracker"
-      />
-      {showAddTask && <AddTask onAdd={addTask} />}
-      {tasks.length > 0 ? (
-        <Tasks tasks={tasks} onDelete={deleteTask} onToggle={toggleReminder} />
-      ) : (
-        "no tasks to show"
-      )}{" "}
+    <div
+      className={`app  ${
+        weather.main && Math.round(weather.main.temp) > 16 ? "warm" : " "
+      }  `}
+    >
+      <main>
+        <div className="search-box">
+          <form onSubmit={onSubmit} action="">
+            <input
+              type="text"
+              className="search-bar"
+              placeholder="Search..."
+              onChange={(e) => setQuery(e.target.value)}
+              value={query}
+              // onKeyPress={}
+            />
+          </form>
+        </div>
+        {weather.main ? (
+          <div>
+            <div className="location-box">
+              <div className="location">
+                {weather.name}, {weather.sys.country}
+              </div>
+              <div className="date">{dateBuilder(new Date())}</div>
+            </div>
+            <div className="weather-box">
+              <div className="temp">{Math.round(weather.main.temp)}°c</div>
+              <div className="weather">{weather.weather[0].main}</div>
+            </div>
+          </div>
+        ) : (
+          ""
+        )}
+      </main>
     </div>
   );
 };
